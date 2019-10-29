@@ -1,0 +1,28 @@
+---
+- hosts: new-edge 
+  become: yes
+  vars_files:
+    - ./vars/vault.yml
+    - ./vars/op-vars.yml
+  tasks:
+    - name: copy deb file
+      copy:
+        src: ~/zabbix-release_3.0-2+bionic_all.deb
+        dest: zabbix-release_3.0-2+bionic_all.deb
+        mode: 0644
+    - name: Install Zabbix Agent 
+      apt:
+        deb: zabbix-release_3.0-2+bionic_all.deb
+        state: present
+      apt:
+        name: zabbix-agent
+        state: present
+    - name: Configure Zabbix Agent
+      shell: |
+        sudo sed -i "s/^[\s]*Server[\s]*=.*/Server=125.131.218.133/g" /etc/zabbix/zabbix_agentd.conf
+        sudo sed -i 's/^[\s]*ServerActive[\s]*=.*/ServerActive=125.131.218.133/g' /etc/zabbix/zabbix_agentd.conf
+        sudo sed -i 's/Hostname=.*/#Hostname=/g' /etc/zabbix/zabbix_agentd.conf
+    - name: Start Zabbix Agent
+      service:
+        name: zabbix-agent
+        state: started

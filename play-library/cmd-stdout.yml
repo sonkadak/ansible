@@ -1,0 +1,13 @@
+---
+- hosts: bucket
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+    - ../vars/test.yml
+  tasks:
+    - name: Print command output
+      shell: find ./envs -type l -ls
+      register: res
+    - debug:
+        var: res.stdout_lines

@@ -1,0 +1,18 @@
+---
+# tasks file for setup---
+- hosts: cgn
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Edit config
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: ^[\s]*Server[\s]*=.*
+        replace: "Server={{ cgn_ips }}"
+      vars:
+        cgn_ips: "192.168.8.11, 192.168.8.12, 192.168.8.13, 192.168.8.14, 192.168.8.15, 19.168.8.16, 192.168.8.17, 192.168.8.18, 192.168.8.19, 192.168.8.20, 192.168.8.21, 192.168.8.22, 192.168.8.23, 192.168.8.24, 192.168.8.25, 192.168.8.26, 192.168.8.27, 192.168.8.28, 192.168.8.29, 192.168.8.30, 192.168.8.33, 192.168.8.34"
+    - name: Restart zabbix agent
+      shell: sudo service zabbix-agent restart
+...

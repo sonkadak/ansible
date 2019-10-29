@@ -1,0 +1,20 @@
+---
+- hosts: host1
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Fetch the file from host
+      fetch:
+        src: /test
+        dest: /tmp/test
+- hosts: host2
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Copy file to host
+      copy: src=/tmp/test dest=/test
+
