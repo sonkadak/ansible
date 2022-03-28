@@ -1,0 +1,6 @@
+---
+- hosts: 
+  tasks:
+    - name: Run script
+      become: yes
+      script: ../proccess-check.sh

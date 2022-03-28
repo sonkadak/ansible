@@ -1,0 +1,86 @@
+---
+- name: Upgrade filebeat version
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+#  hosts: 
+  become: yes
+  gather_facts: no
+  vars_prompt:
+  - name: "ansible_user"
+    prompt: "ssh login user"
+    private: no
+  - name: "ansible_ssh_pass"
+    prompt: "ssh login password"
+    private: yes
+  - name: "ansible_sudo_pass"
+    prompt: "Sudo password"
+    private: yes
+  vars:
+    version:
+      filebeat: '7.15.2'
+      apt_transport_https: latest
+    ## debug mode
+#    ansible_user: 
+#    ansible_ssh_pass: 
+#    ansible_sudo_pass: 
+  handlers:
+  - name: restart filebeat
+    systemd:
+      name: filebeat
+      state: restarted
+      enabled: yes
+    ignore_errors: yes
+  tasks:
+  - ping:
+
+  - name: Import the ELK PGP Key
+    apt_key:
+      url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+  
+  - name: Save the ELK repository
+    copy:
+      content: deb https://artifacts.elastic.co/packages/7.x/apt stable main
+      dest: /etc/apt/sources.list.d/elastic-7.x.list
+      owner: root
+      group: root
+      mode: 0644
+  
+  - name: Install package needed to use the ELK
+    apt:
+      update_cache: yes
+      force: yes
+      name: apt-transport-https{{ '=' + version['apt_transport_https'] if version['apt_transport_https'] is defined and version['apt_transport_https'] != 'latest' else '' }}
+      state: "{{ 'present' if version['apt_transport_https'] is defined and version['apt_transport_https'] != 'latest' else 'latest' }}"
+
+  - name: Install filebeat{{ '=' + version['filebeat'] if version['filebeat'] is defined and version['filebeat'] != 'latest' else '' }}
+    apt:
+      update_cache: yes 
+      name: filebeat{{ '=' + version['filebeat'] if version['filebeat'] is defined and version['filebeat'] != 'latest' else '' }}
+      state: "{{ 'present' if version['filebeat'] is defined and version['filebeat'] != 'latest' else 'latest' }}"
+    notify: restart filebeat
+
+  - meta: flush_handlers
+
+  - name: Check filebeat is running
+    shell: systemctl is-active filebeat
+    register: result
+    changed_when: false
+    failed_when: false
+    ignore_errors: yes 
+    
+  - when: result['stdout'] is defined and result['stdout'] == 'active'
+    name: hold filebeat
+    dpkg_selections:
+      name: filebeat
+      selection: hold
+
+  - name: Alert
+    when: result['stdout'] is undefined or result['stdout'] == 'inactive'
+    debug:
+      msg: "filebeat in {{ ansible_host }} is not running!!"

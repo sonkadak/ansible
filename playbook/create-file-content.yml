@@ -1,0 +1,10 @@
+---
+- hosts: 
+  become: yes
+  tasks: 
+    - name: t
+      copy:
+        dest: /etc/modules-load.d/containerd.conf
+        content: |
+          overlay
+          br_netfilter

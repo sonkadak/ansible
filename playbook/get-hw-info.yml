@@ -1,0 +1,37 @@
+---
+- hosts: 
+  tasks:
+    - name: CPU info
+      become: yes
+      shell: "lshw -c cpu |grep product |awk -F': ' '{print $2}'"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"
+    
+    - name: Memory info
+      become: yes
+      shell: "lshw -c memory |egrep '          description|          vendor|          size'"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"
+    
+    - name: Disk info
+      become: yes
+      shell: "lshw -c disk |egrep 'product|size:'"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"
+    
+    - name: NIC info
+      become: yes
+      shell: "sudo lshw -c network |egrep 'product|vendor|size:'"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"
+    
+    - name: M/B info
+      become: yes
+      shell: "sudo dmidecode -t baseboard |egrep 'Manu|Product'"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"

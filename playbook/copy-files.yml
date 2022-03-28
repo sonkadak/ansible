@@ -1,0 +1,10 @@
+- hosts: 
+  become: true
+  tasks:
+  - name: Copy files to remote
+    copy:
+      src: ./files/containerd
+      dest: /etc/logrotate.d/containerd
+      owner: root
+      group: root
+      mode: 0644

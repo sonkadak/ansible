@@ -1,0 +1,30 @@
+---
+- hosts: 
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+    - ../vars/deploy-deeplook-vars.yml
+  tasks:
+    - name: Deploy deeplook with git module
+      git:
+        repo: 'https://gogs.oddconcepts.kr/styler/deeplook.git'
+        dest: '/home/oddconcepts'
+        version: {{ tag_name }}
+        track_submodules: true
+    - name: Install packages
+      shell: |
+        source /home/oddconcepts/env_python3/bin/activate
+        pip install -e /home/oddconcepts/deeplook/python/ && pip install -e /home/oddconcepts/deeplook/python/deeplook/metabase/
+      when: package_install
+    - name: Check the api servers which need to restart (api server with import server)
+      shell: supervisorctl status |grep import |awk '{print $1}' |awk -F'-' '{print $2}'
+      register: restart_targets
+    - name: Restart: supervisorctl restart
+      supervisorctl:
+        name: {{ item }}
+        state: restarted
+        config: /etc/supervisor/supervisord.conf
+        with_items:
+          - {{ restart_targets }}
+...

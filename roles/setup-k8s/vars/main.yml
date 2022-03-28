@@ -1,0 +1,5 @@
+---
+# vars file for setup-k8s
+kube_version: "1.13.4-00"
+kube_cni_version: "0.6.0-00"
+docker_version: "18.06.1~ce~3-0~ubuntu"

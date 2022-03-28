@@ -1,0 +1,21 @@
+{
+    "system": {
+        "database_root": "/home/oddconcepts/metabase",
+        "mmap_max_size": 4398046511104,
+        "mmap_min_size": 21474836480,
+        "mmap_increment": 21474836480
+    },
+    "database": {
+        "enable_inferred_types": ["lotte", "hmall", "hyundai", "sta1", "musinsa", "default", "demo"],
+        "autoindex_threshold": 1000000000
+    },
+    "migrate": {
+        "bucket_root": "/home/oddconcepts/buckets"
+    },
+    "server": {
+        "listen_address": "127.0.0.1",
+        "listen_port": 12000
+    }
+}
+
+

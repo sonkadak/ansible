@@ -1,0 +1,85 @@
+---
+# tasks file for setup---
+
+- name: apt-get update & upgrade
+  become: yes
+  apt:
+#    upgrade: yes
+    update_cache: yes
+#    force_apt_get: yes
+
+- name: Install pre-requirement packages
+  become: yes
+  apt:
+    name: "{{ packages }}"
+  vars:
+    packages:
+    - curl
+    - wget
+    - avahi-daemon
+    - tmux
+    - screen
+    - byobu
+    - htop
+    - iotop
+    - sysstat
+    - nfs-common
+
+- name: Modify hard nofile limits
+  become: yes
+  pam_limits:
+    domain: '*'
+    limit_type: '-'
+    limit_item: nofile
+    value: 102400
+
+- name: Set default runlevel
+  become: yes  
+  command: systemctl set-default multi-user.target
+
+- name: Update GRUB kernel option
+  become: yes
+  replace:
+    path: /etc/default/grub
+    regexp: '^GRUB_CMDLINE_LINUX=".*"$'
+    replace: 'GRUB_CMDLINE_LINUX="nopti"'
+
+- name: Update GRUB
+  become: yes  
+  command: update-grub
+
+#- name: Copy zenstate.py file
+#  become: yes
+#  copy:
+#    src: "{{ role_path }}/files/zenstates.py"
+#    dest: /opt/zenstates/
+#    mode: preserve
+#
+#- name: Copy rc.local file
+#  become: yes
+#  copy:
+#    src: "{{ role_path }}/files/rc.local"
+#    dest: /etc/
+#    mode: preserve
+#
+#- name: Copy rc-local.service
+#  become: yes
+#  copy:
+#    src: "{{ role_path }}/files/rc-local.service"
+#    dest: /lib/systemd/system/
+#    mode: preserve
+#
+#- name: Add msr module for zenstate
+#  become: yes
+#  modprobe:
+#    name: msr
+#    state: present
+#
+#- name: Enable and start rc.local
+#  become: yes
+#  systemd:
+#    name: rc.local.service
+#    state: started
+#    daemon_reload: yes
+#    enabled: yes
+...

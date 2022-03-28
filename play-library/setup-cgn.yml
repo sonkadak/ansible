@@ -1,9 +1,0 @@
----
-- hosts: cgn-24
-  become: yes
-  vars_files:
-    - ../vars/vault.yml
-    - ../vars/oc-vars.yml
-  roles:
-    - setup-common
-    - setup-k8s

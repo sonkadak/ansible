@@ -1,0 +1,26 @@
+---
+- hosts: 
+  tasks:
+    - name: Add GPG-KEY
+      become: yes
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Add repositary
+      become: yes
+      shell: |
+        echo "deb https://artifacts.elastic.co/packages/6.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-6.x.list
+
+    - name: apt-get update
+      become: yes
+      apt:
+        update_cache: yes
+    
+    - name: Install pre-requirement packages
+      become: yes
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - apt-transport-https

@@ -1,0 +1,16 @@
+---
+- hosts: 
+  tasks:
+    - name: apt update
+      become: yes
+      apt:
+        update_cache: yes
+
+    - name: Install packages
+      become: yes
+      apt:
+        allow_unauthenticated: yes
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - nfs-common

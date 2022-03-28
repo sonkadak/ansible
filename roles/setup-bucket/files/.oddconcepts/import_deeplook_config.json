@@ -1,0 +1,56 @@
+{
+    "broker": {
+        "vhost": "deeplook", 
+        "host": "lab.oddconcepts.net", 
+        "password": "odd1234(O)P", 
+        "user": "deeplook", 
+        "production": true,
+        "download_dir": "/hdd/import/download"
+    }, 
+    "download_proxy": {
+        "http": "http://deeplook-download-proxy.local:3128", 
+        "https": "https://deeplook-download-proxy.local:3129"
+    }, 
+    "api_server": {
+        "import_server_origin": "127.0.0.1", 
+        "buckets": [
+            "default", 
+            "lotte"
+        ], 
+        "port": 5000
+    }, 
+    "import_server": {
+        "session_base_dir": "/hdd/import/sessions", 
+        "download_dir": "/hdd/import/download", 
+        "buckets": [
+            "default", 
+            "lotte"
+        ], 
+        "api_servers": [
+            "http://localhost:5000"
+        ], 
+        "port": 5050
+    }, 
+    "sentinel": {
+        "detect_root": "/home/oddconcepts/deeplook/models/detection/fashion", 
+        "memory_warn_rate": 0.1, 
+        "mapping": null, 
+        "blacklist": [], 
+        "extract_root": "/home/oddconcepts/deeplook/models/extraction/fashion", 
+        "plugin_root": "/home/oddconcepts/deeplook/python/deeplook/sentinelplugins"
+    }, 
+    "server": {
+        "port": 5000, 
+        "address": "0.0.0.0"
+    }, 
+    "system": {
+        "upload_root": null, 
+        "deeplook_root": "/home/oddconcepts/deeplook", 
+        "bucket_object_root": "/hdd/bucket_objects",
+        "bucket_root": "/home/oddconcepts/import/buckets",
+        "log_root": "/var/log/deeplook"
+    }, 
+    "sentinel_client": {
+        "host": "deeplook-dev.local:12345"
+    }
+}

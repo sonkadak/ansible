@@ -1,0 +1,62 @@
+---
+- name: Install docker repository 1/3
+  become: yes
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+- name: Install docker repository 2/3
+  command: lsb_release -cs
+  register: codename
+- name: Install docker repository 3/3
+  become: yes
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ codename.stdout }} stable
+    state: present
+- name: Install k8s repository 1/2
+  become: yes
+  apt_key:
+    url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+    state: present
+- name: Install docker repository 2/2
+  become: yes
+  apt_repository:
+    repo: deb https://apt.kubernetes.io/ kubernetes-xenial main
+    state: present
+- name: Install docker packages
+  become: yes
+  apt:
+    allow_unauthenticated: yes
+    name: "{{ item }}"
+  with_items:
+    - docker-ce={{ docker_version }}
+    - kubernetes-cni={{ kube_cni_version }}
+    - kubelet={{ kube_version }}
+    - kubeadm={{ kube_version }}
+    - kubectl={{ kube_version }}
+- name: Make current user can run docker without sudo
+  become: yes
+  user:
+    name: "{{ ansible_user_id }}"
+    append: yes
+    groups: docker
+- name: Recursively change ownership of a directory
+  file:
+    path: ~/.docker
+    state: directory
+    recurse: yes
+    owner: "{{ ansible_user_id }}"
+- name: Disable swap 1/2
+  become: yes
+  shell: swapoff -a
+- name: Disable swap 2/2
+  become: yes
+  replace:
+    path: /etc/fstab
+    regexp: ^(.+?\sswap\s+sw\s+.*)$
+    replace: '# \1'
+#- name: Reboot
+#  become: yes
+#  reboot:
+#    reboot_timeout: 1800
+#    test_command: whoami
+...

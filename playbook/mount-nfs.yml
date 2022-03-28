@@ -1,0 +1,20 @@
+---
+- hosts: 
+  become: yes
+  tasks:
+    - name: Install nfs-common
+      apt:
+        update_cache: yes
+        name: nfs-common
+    - name: Create directory
+      file:
+        path: {{ target_dir }}
+        state: directory
+        owner: elasticsearch
+        group: elasticsearch
+    - name: Mount nfs
+      mount:
+        path: /es-backup
+        src: 192.168.1.1:/
+        fstype: nfs
+        state: mounted

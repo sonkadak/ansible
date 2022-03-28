@@ -1,0 +1,9 @@
+---
+- hosts: 
+  tasks:
+    - name: Get shell output
+      become: yes
+      shell: "{{ shell_command }}"
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"

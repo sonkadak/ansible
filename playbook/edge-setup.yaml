@@ -1,0 +1,14 @@
+---
+- hosts: 
+  become: yes
+  vars_files:
+    - ./vars/vault.yml
+    - ./vars/op-vars.yml
+  tasks:
+    - name: Install package 
+      apt:
+        name: sshguard
+        state: latest
+      apt:
+        name: nginx
+        state: latest

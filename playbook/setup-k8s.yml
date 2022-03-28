@@ -1,0 +1,27 @@
+---
+- hosts:
+  become: yes
+  tasks:
+    - name: add k8s gpg key
+      apt_key:
+        url: "https://packages.cloud.google.com/apt/doc/apt-key.gpg"
+        keyring: "/usr/share/keyrings/kubernetes-archive-keyring.gpg"
+    - name: setup repository
+      shell: 'echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list'
+    - name: install k8s packages
+      apt:
+        update_cache: yes
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - kubectl=1.21.0-00
+        - kubeadm=1.21.0-00
+        - kubelet=1.21.0-00
+    - name: apt-mark
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubectl
+        - kubeadm
+        - kubelet

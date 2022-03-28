@@ -1,0 +1,27 @@
+---
+- hosts: 
+  vars:
+    - zabbix_server_ip: "192.168.1.1"
+    - k8s_ips: "192.168.1.2, 192.168.1.3"
+  tasks:
+    - name: Update zabbix-agent configuration 1/3
+      become: yes
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: ^[\s]*Server[\s]*=.*
+        replace: "Server={{ k8s_ips }}"
+    
+    - name: Restart zabbix-agent
+      become: yes
+      service:
+        name: zabbix-agent
+        state: restarted
+    
+    - name: Get shell output
+      become: yes
+      shell: |
+        sudo cat /etc/zabbix/zabbix_agentd.conf |grep 'Server=192'
+        sudo cat /etc/hosts |grep zabbix
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"

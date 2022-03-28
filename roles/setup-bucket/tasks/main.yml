@@ -1,0 +1,255 @@
+---
+- name: apt-get update & upgrade
+  become: yes
+  apt:
+    upgrade: yes
+    update_cache: yes
+
+- name: Install build tools and libraries
+  become: yes
+  apt:
+    name: "{{ packages }}"
+
+- name: Set timezone to Asia/Seoul
+  become: yes
+  timezone:
+    name: Asia/Seoul
+
+- name: Install filebeat 6.4.3
+  become: yes
+  apt:
+    deb: https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.4.3-amd64.deb
+
+- name: Setup filebeat 1/1
+  become: yes
+  service:
+    name: filebeat
+    state: stopped
+
+- name: Setup filebeat 2/2
+  become: yes
+  shell: mv /etc/filebeat/filebeat.yml /etc/filebeat/filebeat_default.yml
+
+- name: Setup filebeat 3/3
+  become: yes
+  copy:
+    src: "{{ role_path }}/files/filebeat.yml"
+    dest: /etc/filebeat/filebeat.yml
+    owner: root
+    group: root
+    mode: '0600'
+
+- name: Start filebeat
+  become: yes
+  service:
+    name: filebeat
+    state: started
+
+- name: Add gpg keys for docker
+  become: yes
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Get current release version
+  shell: lsb_release -cs
+  register: codename
+
+- name: Add repository for docker
+  become: yes
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ codename.stdout }} stable
+    state: present
+
+- name: Update apt-get
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Install docker-ce
+  become: yes
+  apt:
+    name: docker-ce
+
+- name: Check diectory 1/2
+  stat:
+    path: "/home/{{ ansible_user }}/deeplook"
+  register: deeplook_stat
+
+- name: Check directory 2/2
+  stat:
+    path: "/home/{{ ansible_user }}/configuration"
+  register: configuration_stat
+
+- name: Git clone deeplook
+  shell: |
+    cd /home/{{ ansible_user }}
+    git clone https://{{ gogs_user }}:{{ gogs_pw }}@gogs.{{ ansible_user }}.kr/styler/deeplook.git
+#  when: deeplook_stat.stat.exists == false
+
+- name: Git clone configuration
+  shell: |
+    cd /home/{{ ansible_user }}
+    git clone https://{{ gogs_user }}:{{ gogs_pw }}@gogs.{{ ansible_user }}.kr/styler/configuration.git
+#  when: configuration_stat.stat.exists == false
+
+- name: Edit git config for configuration
+  shell: |
+    cd /home/{{ ansible_user }}/configuration
+    git config remote.origin.url "https://gogs.{{ ansible_user }}.kr/styler/configuration.git"
+
+- name: Deeplook git init and update submodule
+  shell: |
+    cd deeplook
+    git submodule init
+    git config submodule.python/deeplook/metabase.url "https://{{ gogs_user }}:{{ gogs_pw }}@gogs.{{ ansible_user }}.kr/{{ ansible_user }}/metabase.git"
+    git submodule update --recursive
+    git config submodule.python/deeplook/metabase.url "https://gogs.{{ ansible_user }}.kr/{{ ansible_user }}/metabase.git"
+
+- name: Metabase git submodule update
+  shell: |
+    cd $HOME/deeplook/python/deeplook/metabase/
+    git config submodule.db/lakris.url "https://{{ gogs_user }}:{{ gogs_pw }}@gogs.{{ ansible_user }}.kr/scrabble/lakris.git"
+    git submodule init
+    git submodule update --recursive
+    git config submodule.db/lakris.url "https://gogs.{{ ansible_user }}.kr/scrabble/lakris.git"
+    git config remote.origin.url "https://gogs.{{ ansible_user }}.kr/{{ ansible_user }}/metabase.git"
+
+- name: Copy virtualenv 1/2
+  synchronize:
+    src: "{{ role_path }}/files/envs"
+    dest: /home/oddconcepts
+    copy_links: yes
+    owner: no
+    group: no
+
+- name: Copy virtualenv 2/2
+  synchronize:
+    src: "{{ role_path }}/files/.oddconcepts"
+    dest: /home/oddconcepts
+    copy_links: yes
+    owner: no
+    group: no
+
+- name: Create deeplook venv
+  shell: virtualenv -p python3.6 /home/{{ ansible_user }}/envs/deeplook
+
+- name: Install Cython
+  pip:
+    name: Cython
+    virtualenv: "/home/{{ ansible_user }}/envs/deeplook"
+
+#- name: pip install deeplook
+#  pip:
+#    virtualenv: /home/{{ ansible_user }}/envs/deeplook
+#    editable: yes
+#    name: '/home/{{ ansible_user }}/deeplook/python'
+#    chdir: '/home/{{ ansible_user }}/deeplook/python'
+#
+#- name: pip install metabase
+#  pip:
+#    virtualenv: /home/{{ ansible_user }}/envs/deeplook
+#    editable: yes
+#    name: '/home/{{ ansible_user }}/deeplook/python/deeplook/metabase'
+#    chdir: '/home/{{ ansible_user }}/deeplook/python/deeplook/metabase'
+
+- name: Get disk list except os disk (sda)
+  become: yes
+  shell: sudo fdisk -l |egrep '/dev/sd|/dev/nvme' |egrep -v 'sda' |grep ':' |cut -d':' -f1 |cut -d'/' -f3 |sort
+  register: disk_list
+
+- name: Partitioning disk
+  become: yes
+  parted:
+    device: "/dev/{{ item }}"
+    number: 1
+    state: present
+    label: gpt
+  with_items:
+    - "{{ disk_list.stdout_lines }}"
+
+- name: Get partition list except os disk (sda)
+  become: yes
+  shell: sudo fdisk -l |egrep '/dev/sd|/dev/nvme' |egrep -v 'sda' |grep ':' |cut -d':' -f1 |cut -d'/' -f3 |sort
+  register: disk_part_list
+
+- name: Create Filesystem
+  become: yes
+  filesystem:
+    fstype: ext4
+    dev: "/dev/{{ item }}"
+  with_items:
+    - "{{ disk_part_list.stdout_lines }}"
+
+- name: Get UUID of each disk partition
+  become: yes
+  shell: "blkid -s UUID -o value /dev/{{ item }}"
+  register: disk_uuid
+  with_items:
+    - "{{ disk_part_list.stdout_lines }}"
+
+- name: Mount nvme and hdd
+  become: yes
+  mount:
+    path: "/mnt/{{ item.0 }}"
+    src: "UUID={{ item.1.stdout }}"
+    fstype: ext4
+    state: mounted
+  with_together:
+     - [ 'nvme1', 'nvme2', 'hdd1' ]
+     - "{{ disk_uuid.results }}"
+
+- name: Make nvme and hdd directory
+  become: yes
+  file:
+    path: "/mnt/{{ item }}"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  with_items:
+    - "nvme1/metabse"
+    - "nvme1/buckets"
+    - "nvme2/metabse"
+    - "nvme2/buckets"
+    - "hdd1/metabase_backup"
+    - "hdd1/bucket_backup"
+
+- name: Create directory metabase and buckets for symlink
+  file:
+    path: "/home/{{ ansible_user }}/{{ item }}"
+    state: directory
+  with_items:
+    - "metabse"
+    - "buckets"
+
+- name: Make symlink to metabase and buckets
+  file:
+    src: "/mnt/{{ item.src }}"
+    dest: "/home/oddconcepts/{{ item.dest }}"
+    state: link
+  with_items:
+    - { src: 'hdd1/metabase_backup', dest: 'metabase_backup' }
+    - { src: 'hdd1/bucket_backup', dest: 'bucket_backup' }
+
+- name: Create log directory
+  become: yes
+  file:
+    path: "/var/log/deeplook"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+
+- name: Set logrotate
+  become: yes
+  copy:
+    src: "{{ role_path }}/files/deeplook-logrotate"
+    dest: /etc/logrotate.d/deeplook
+
+- name: Add logrotate to root crontab
+  become: yes
+  cron:
+    name: "deeplook logrotate"
+    minute: "0"
+    hour: "4"
+    job: "/usr/sbin/logrotate -f /etc/logrotate.conf"
+...

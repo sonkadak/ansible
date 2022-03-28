@@ -1,0 +1,25 @@
+---
+- hosts: 
+  become: yes
+  tasks:
+    - name: Replace in file
+      become: yes
+      replace:
+        path: /etc/filebeat/filebeat.yml
+        regexp: '  hosts: 
+        replace: '  hosts: 
+
+    - name: Restart filebeat
+      become: yes
+      service:
+        name: filebeat
+        state: restarted
+    
+    - name: Get service facts
+      become: yes
+      service_facts:
+
+    - name: Check filebeat status
+      become: yes
+      debug:
+        var: ansible_facts.services["filebeat.service"].state

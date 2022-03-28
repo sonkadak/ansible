@@ -1,0 +1,27 @@
+---
+- hosts: 
+  gather_facts: yes
+  become: yes
+  vars:
+    services:
+      - nginx
+      - zabbix-agent
+      - filebeat
+  vars_prompt:
+    - name: "ansible_user"
+      prompt: "ssh login user"
+      private: no
+    - name: "ansible_ssh_pass"
+      prompt: "ssh login password"
+      private: yes
+    - name: "ansible_sudo_pass"
+      prompt: "Sudo password"
+      private: yes
+  tasks:
+    - name: "start and enable services"
+      become: yes
+      service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      with_items: "{{ services }}"

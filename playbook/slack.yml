@@ -1,0 +1,16 @@
+- hosts: 
+  tasks:
+  - name: Send slack webhook
+    run_once: true
+    slack:
+      domain: oddconcepts.slack.com
+      token: T0BHXJFNY/BQS2MSGS2/WR9qcHBjfxQ6ualXOomhiNcG
+      channel: '#CHANNEL'
+      attachments:
+        - text: 'change-password.yml: Only affect on the host that not failed.'
+          color: '#ff00dd'
+          title: 'Job executed'
+          fields:
+            - title: Value
+              value: "{{ hostvars['localhost'].new_pass.stdout }}"
+              short: True

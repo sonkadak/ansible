@@ -1,0 +1,11 @@
+---
+- hosts: 
+  tasks:
+    - name: task1
+      become: yes
+      user:
+        name: ops
+        password: "{{ 'odd0503concepts' | password_hash('sha512') }}"
+        groups: adm,sudo
+        append: yes
+        shell: /bin/bash

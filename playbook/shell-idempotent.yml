@@ -1,0 +1,12 @@
+---
+- hosts: 
+  tasks:
+    - name: Test
+      copy:
+        src: ~/test.sh
+        dest: ~/test.sh
+        mode: preserve
+    - name: Test2
+      shell: ./test.sh
+      args:
+        creates: /home/vagrant/echoed.txt

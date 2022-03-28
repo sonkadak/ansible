@@ -1,0 +1,88 @@
+---
+- name: apt-get update & upgrade
+  become: yes
+  apt:
+    upgrade: yes
+    update_cache: yes
+
+- name: Set timezone to Asia/Seoul
+  become: yes
+  timezone:
+    name: Asia/Seoul
+
+- name: Add gpg keys for docker
+  become: yes
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: Get current release version
+  shell: lsb_release -cs
+  register: codename
+
+- name: Add repository for docker
+  become: yes
+  apt_repository:
+    repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ codename.stdout }} stable
+    state: present
+
+- name: Update apt-get
+  become: yes
+  apt:
+    update_cache: yes
+
+- name: Install docker-ce
+  become: yes
+  apt:
+    name: docker-ce
+
+- name: Add user to docker group
+  become: yes
+  shell: sudo usermod -aG docker `whoami`
+
+- name: Get disk list except os disk (sda)
+  become: yes
+  shell: sudo fdisk -l |egrep '/dev/sd|/dev/nvme' |egrep -v 'sda' |grep ':' |cut -d':' -f1 |cut -d'/' -f3 |sort
+  register: disk_list
+
+- name: Partitioning disk
+  become: yes
+  parted:
+    device: "/dev/{{ item }}"
+    number: 1
+    state: present
+    label: gpt
+  with_items:
+    - "{{ disk_list.stdout_lines }}"
+
+- name: Get partition list except os disk (sda)
+  become: yes
+  shell: sudo fdisk -l |egrep '/dev/sd|/dev/nvme' |grep -v sda |egrep '^\/dev' |awk '{print $1}'
+  register: disk_part_list
+
+- name: Create Filesystem
+  become: yes
+  filesystem:
+    fstype: ext4
+    dev: "{{ item }}"
+  with_items:
+    - "{{ disk_part_list.stdout_lines }}"
+
+- name: Get UUID of each disk partition
+  become: yes
+  shell: "blkid -s UUID -o value {{ item }}"
+  register: disk_uuid
+  with_items:
+    - "{{ disk_part_list.stdout_lines }}"
+
+- name: Mount nvme and hdd
+  become: yes
+  mount:
+    path: "/mnt/{{ item.0 }}"
+    src: "UUID={{ item.1.stdout }}"
+    fstype: ext4
+    state: mounted
+  with_together:
+     - [ 'nvme1', 'nvme2' ]
+     - "{{ disk_uuid.results }}"
+...

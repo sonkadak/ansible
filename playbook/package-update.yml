@@ -1,0 +1,57 @@
+---
+- hosts: 
+  tasks:
+    - name: Backup config
+      become: yes
+      copy:
+        src: /etc/filebeat/filebeat.yml
+        dest: /etc/filebeat/filebeat.yml.old
+        remote_src: yes
+
+    - name: Add GPG-KEY
+      become: yes
+      apt_key:
+        url: https://artifacts.elastic.co/GPG-KEY-elasticsearch
+        state: present
+
+    - name: Check repo existence
+      become: yes
+      stat:
+        path: /etc/apt/sources.list.d/elastic-7.x.list
+      register: source_file
+
+    - name: Add repositary when source is not exist
+      become: yes
+      shell: |
+        echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
+      when: not source_file.stat.exists
+
+    - name: apt-get update
+      become: yes
+      apt:
+        update_cache: yes
+
+    - name: Install pre-requirement packages
+      become: yes
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - apt-transport-https
+
+    - name: Stop service
+      become: yes
+      systemd:
+        name: filebeat
+        state: stopped
+
+    - name: Install new package
+      become: yes
+      apt:
+        name: filebeat=7.9.2
+
+    - name: Start service
+      become: yes
+      systemd:
+        name: filebeat
+        state: started

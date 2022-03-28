@@ -1,0 +1,14 @@
+---
+- hosts: 
+#  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Get user list
+      command: cut --delimiter=':' --fields=1 /etc/passwd
+      register: username
+    - debug:
+        msg: oddconcepts OK
+        #var: username
+      when: "'oddconcepts' in username.stdout_lines"

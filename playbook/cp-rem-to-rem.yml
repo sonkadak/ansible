@@ -1,0 +1,8 @@
+- hosts: 
+  tasks:    
+   - name: Copy Remote-To-Remote
+     become: yes
+     synchronize:
+       src: "{{ src_dir }}"
+       dest: "{{ dest_dir }}"
+     delegate_to: "{{ src_node }}"

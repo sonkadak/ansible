@@ -1,0 +1,6 @@
+---
+- hosts: 
+  roles:
+    - setup-common
+    - setup-k8s
+...

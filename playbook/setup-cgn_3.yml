@@ -1,0 +1,7 @@
+---
+- hosts: 
+  tasks:
+    - name: Copy join script to host
+      copy: src=join-command dest=/home/{{ ansible_user }}/join-command.sh mode=0777
+    - name: Join the cluster
+      command: sh /home/{{ ansible_user }}/join-command.sh

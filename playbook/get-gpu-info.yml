@@ -1,0 +1,9 @@
+---
+- hosts: 
+  tasks:
+    - name: gpu info
+      become: yes
+      shell: lshw -c display |grep product
+      register: res
+    - debug:
+        msg: "{{ res.stdout_lines }}"

@@ -1,0 +1,10 @@
+---
+- hosts: 
+  tasks:
+    - name: Add line to file
+      become: yes
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        line: 'oddconcepts ALL=(ALL) NOPASSWD: ALL'
+        validate: 'visudo -cf %s'

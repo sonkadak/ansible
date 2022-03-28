@@ -1,0 +1,25 @@
+---
+- hosts: 
+  become: true
+  tasks:
+    - name: Update zabbix-agent configuration
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: "# EnableRemoteCommands=0"
+        replace: "EnableRemoteCommands=1"
+    - name: Restart zabbix-agent
+      service:
+        name: zabbix-agent
+        state: restarted
+    - name: Backup sudoers file
+      copy:
+        src: /etc/sudoers
+        dest: /etc/sudoers.bak
+        remote_src: yes
+        validate: 'visudo -cf %s'
+    - name: Edit sudoers file. add zabbix user
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        line: 'zabbix  ALL=NOPASSWD: /usr/bin/apt-get autoremove -y'
+        validate: 'visudo -cf %s'

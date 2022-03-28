@@ -1,0 +1,8 @@
+/var/log/deeplook/*.log {
+        weekly
+        rotate 1
+        compress
+        delaycompress
+        missingok
+        notifempty
+}

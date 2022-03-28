@@ -1,0 +1,20 @@
+---
+# copy virtual env from current working bucket
+- hosts: 
+  tasks:
+    - name: Fetch env from working bucket
+      become: yes
+      fetch:
+        src: /home/oddconcepts/envs
+        dest: /etc/ansible/roles/setup-bucket/files/
+# set up
+- hosts: 
+  vars_prompt:
+    - name: "gogs_user"
+      prompt: "Enter username for gogs.oddconcepts.net"
+      private: no
+    - name: "gogs_pw"
+      prompt: "Enter Password"
+  roles:
+    - setup-common
+    - setup-bucket

@@ -1,0 +1,59 @@
+---
+- hosts: 
+  tasks:
+    - name: Get name of latest nvidia-driver
+      become: yes
+      shell: "apt-cache policy nvidia-driver-* |egrep 'nvidia-driver-[0-9]' |sort -n |tail -n1 |cut -d ':' -f1"
+      register: nvidia_driver
+
+    - name: Install nvidia-driver
+      become: yes
+      apt:
+        name: "{{ packages }}"
+      vars:
+        packages:
+        - "{{ nvidia_driver.stdout }}"
+        - nfs-common
+        - autofs
+
+    - name: Edit auto.master file
+      become: yes
+      lineinfile:
+        path: /etc/auto.master
+        line: /srv/data   /etc/auto.nfs
+
+    - name: Create /auto.master.d
+      become: yes
+      file:
+        path: /etc/auto.master.d
+        state: directory
+
+    - name: Create /auto.master.d/nfs.autofs
+      become: yes
+      lineinfile:
+        path: /etc/auto.master.d/nfs.autofs
+        line: NAME 192.168.1.1:/srv/data/NAME
+        create: yes
+
+    - name: nfs.autofs 1/3
+      become: yes
+      lineinfile:
+        path: /etc/auto.master.d/nfs.autofs
+        line: NAME2 192.168.1.1:/srv/data/NAME2
+
+    - name: Create /srv/data
+      become: yes
+      file:
+        path: /srv/data
+        state: directory
+
+    - name: Restart autofs
+      become: yes
+      service:
+        name: autofs
+        state: restarted
+
+    - name: Reboot machine
+      become: yes
+      reboot:
+        test_command: whoami

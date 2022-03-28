@@ -1,0 +1,106 @@
+---
+- hosts: 
+  vars:
+    - zabbix_server_ip: "192.168.10.100"
+    - cgn_ips: "192.168.1.2, 192.168.1.3"
+  tasks:
+    - name: apt-get update
+      become: yes
+      apt:
+        update_cache: yes
+    
+        #    - name: Install pre-requirement packages
+        #      become: yes
+        #      apt:
+        #        name: "{{ packages }}"
+        #      vars:
+        #        packages:
+        #        - curl
+        #        - wget
+        #        - avahi-daemon
+        #        - tmux
+        #        - screen
+        #        - byobu
+        #        - htop
+        #        - iotop
+        #        - sysstat
+    
+    - name: Get current release version
+      shell: lsb_release -cs
+      register: codename
+    
+    - name: Check if zabbix-agent is installed
+      command: dpkg-query -W zabbix-agent
+      register: chk_zabbix_installed
+      failed_when: chk_zabbix_installed.rc > 1
+      changed_when: chk_zabbix_installed.rc == 1
+    
+    - name: Download zabbix repository
+      command: "wget http://repo.zabbix.com/zabbix/4.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_4.0-3+{{ codename.stdout }}_all.deb"
+      when: chk_zabbix_installed.rc == 1
+      args:
+        creates: /home/oddconcepts/zabbix-release_4.0-3+{{ codename.stdout }}_all.deb
+    
+    - name: Install zabbix repository
+      become: yes
+      apt:
+        deb: "/home/{{ ansible_user }}/zabbix-release_4.0-3+{{ codename.stdout }}_all.deb"
+        force: yes
+      when: chk_zabbix_installed.rc == 1
+    
+    - name: Clean up work directory
+      become: yes
+      file:
+        state: absent
+        path: /home/{{ ansible_user }}/zabbix-release_4.0-3+{{ codename.stdout }}_all.deb
+    
+    - name: Install packages
+      become: yes
+      apt:
+        allow_unauthenticated: yes
+        name: "{{ packages }}"
+      vars:
+        packages:
+#        - nfs-common
+        - zabbix-agent
+    
+    - name: Add zabbix server at /etc/hosts
+      become: yes
+      lineinfile:
+        dest: /etc/hosts
+        line: "{{ zabbix_server_ip }}\tzabbix.dc1.oc"
+        state: present
+    
+    - name: Update zabbix-agent configuration 1/3
+      become: yes
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: ^[\s]*Server[\s]*=.*
+        replace: "Server={{ cgn_ips }}"
+    
+    - name: Update zabbix-agent configuration 2/3
+      become: yes
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: ^[\s]*ServerActive[\s]*=.*
+        replace: "ServerActive=zabbix.dc1.oc"
+    
+    - name: Update zabbix-agent configuration 3/3
+      become: yes
+      replace:
+        path: /etc/zabbix/zabbix_agentd.conf
+        regexp: "Hostname=.*"
+        replace: "#Hostname="
+    
+    - name: Update-rc.d
+      become: yes
+      shell: update-rc.d zabbix-agent "{{ item }}"
+      with_items:
+        - "defaults"
+        - "enable"
+    
+    - name: Restart zabbix-agent
+      become: yes
+      service:
+        name: zabbix-agent
+        state: restarted

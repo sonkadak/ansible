@@ -1,0 +1,9 @@
+---
+- hosts: 
+  tasks:
+    - name: Replace in file
+      become: yes
+      replace:
+        path: /etc/filebeat/filebeat.yml
+        regexp: 'filebeat.prospectors'
+        replace: 'filebeat.inputs'

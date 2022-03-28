@@ -1,0 +1,11 @@
+---
+- hosts: 
+  tasks:
+    - name: Add GPG-KEY
+      become: yes
+      lineinfile:
+        path: /etc/filebeat/filebeat.yml
+        insertafter: "json.keys_under_root: true"
+        line: "    json.overwrite_keys: true"
+        firstmatch: yes
+        state: present

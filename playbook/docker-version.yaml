@@ -1,0 +1,12 @@
+---
+- hosts: 
+  become: yes
+  vars_files:
+    - ./vars/vault.yml
+    - ./vars/oc-vars.yml
+  tasks:
+    - name: Install package
+      shell: docker --version
+      register: res
+    - debug:
+        var: res.stdout_lines

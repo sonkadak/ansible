@@ -1,0 +1,25 @@
+---
+- hosts: 
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Create cluster join token
+      become: yes
+      become_user: kube
+      command: kubeadm token create --print-join-command
+      register: join_command
+    - name: Create cluster join script
+      local_action: copy content="{{ join_command.stdout_lines[0] }}" dest="./join-command"
+- hosts: 
+  become: yes
+  vars_files:
+    - ../vars/vault.yml
+    - ../vars/oc-vars.yml
+  tasks:
+    - name: Copy join script to host
+      copy: src=join-command dest=/home/{{ ansible_user }}/join-command.sh mode=0777
+    - name: Join the cluster
+      command: sh /home/{{ ansible_user }}/join-command.sh
+...
